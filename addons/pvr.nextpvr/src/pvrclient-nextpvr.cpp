@@ -996,7 +996,6 @@ bool cPVRClientNextPVR::OpenLiveStream(const PVR_CHANNEL &channelinfo)
 		if (m_supportsLiveTimeshift && g_bUseTimeshift)
 		  sprintf(line, "GET /live?channel=%d&mode=liveshift&client=XBMC-%s HTTP/1.0\r\n", channelinfo.iChannelNumber, m_sid); 
 	}
-	XBMC->Log(LOG_DEBUG, line);
     m_streamingclient->send(line, strlen(line));
 
     sprintf(line, "Connection: close\r\n");
@@ -1048,7 +1047,6 @@ bool cPVRClientNextPVR::OpenLiveStream(const PVR_CHANNEL &channelinfo)
 		else
 			snprintf(line, sizeof(line), "http://%s:%d/live?channel=%d&client=XBMC", g_szHostname.c_str(), m_streamingPort, channelinfo.iChannelNumber);
         m_PlaybackURL = line;
-		XBMC->Log(LOG_DEBUG, "m_PlaybackURL: %s", m_PlaybackURL);
 
         if (m_supportsLiveTimeshift && g_bUseTimeshift)
         {
