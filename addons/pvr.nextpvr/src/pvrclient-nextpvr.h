@@ -125,6 +125,7 @@ private:
   long long               m_currentLiveLength;
   long long               m_currentLivePosition;
   int                     m_streamingPort;
+  int					  m_backendVersion;
 
   CStdString              m_PlaybackURL;
   LiveShiftSource        *m_pLiveShiftSource;

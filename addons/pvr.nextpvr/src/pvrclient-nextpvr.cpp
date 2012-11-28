@@ -203,13 +203,13 @@ bool cPVRClientNextPVR::Connect()
                 else 
                 {
                   // NextPVR server
-                  int version = atoi(versionNode->FirstChild()->Value());
-                  XBMC->Log(LOG_DEBUG, "NextPVR version: %d", version);
+                  m_backendVersion = atoi(versionNode->FirstChild()->Value());
+                  XBMC->Log(LOG_DEBUG, "NextPVR version: %d", m_backendVersion);
 
                   // is the server new enough
-                  if (version < 20508)
+                  if (m_backendVersion < 20508)
                   {
-                    XBMC->Log(LOG_ERROR, "Your NextPVR version '%d' is too old. Please upgrade to '%s' or higher!", version, NEXTPVRC_MIN_VERSION_STRING);
+                    XBMC->Log(LOG_ERROR, "Your NextPVR version '%d' is too old. Please upgrade to '%s' or higher!", m_backendVersion, NEXTPVRC_MIN_VERSION_STRING);
                     XBMC->QueueNotification(QUEUE_ERROR, XBMC->GetLocalizedString(30050));
                     XBMC->QueueNotification(QUEUE_ERROR, XBMC->GetLocalizedString(30051), NEXTPVRC_MIN_VERSION_STRING);
                     return false;
@@ -984,9 +984,19 @@ bool cPVRClientNextPVR::OpenLiveStream(const PVR_CHANNEL &channelinfo)
     }
   
     char line[256];
-    sprintf(line, "GET /live?channeloid=%d&client=XBMC-%s HTTP/1.0\r\n", channelinfo.iUniqueId, m_sid); 
-    if (m_supportsLiveTimeshift && g_bUseTimeshift)
-      sprintf(line, "GET /live?channeloid=%d&mode=liveshift&client=XBMC-%s HTTP/1.0\r\n", channelinfo.iUniqueId, m_sid); 
+	if(m_backendVersion >= 20510)
+	{
+		sprintf(line, "GET /live?channeloid=%d&client=XBMC-%s HTTP/1.0\r\n", channelinfo.iUniqueId, m_sid); 
+		if (m_supportsLiveTimeshift && g_bUseTimeshift)
+		  sprintf(line, "GET /live?channeloid=%d&mode=liveshift&client=XBMC-%s HTTP/1.0\r\n", channelinfo.iUniqueId, m_sid); 
+	}
+	else
+	{
+		sprintf(line, "GET /live?channel=%d&client=XBMC-%s HTTP/1.0\r\n", channelinfo.iChannelNumber, m_sid); 
+		if (m_supportsLiveTimeshift && g_bUseTimeshift)
+		  sprintf(line, "GET /live?channel=%d&mode=liveshift&client=XBMC-%s HTTP/1.0\r\n", channelinfo.iChannelNumber, m_sid); 
+	}
+	XBMC->Log(LOG_DEBUG, line);
     m_streamingclient->send(line, strlen(line));
 
     sprintf(line, "Connection: close\r\n");
@@ -1032,10 +1042,13 @@ bool cPVRClientNextPVR::OpenLiveStream(const PVR_CHANNEL &channelinfo)
 
         // long blocking from now on
         m_streamingclient->set_non_blocking(1);
-
-        snprintf(line, sizeof(line), "http://%s:%d/live?channeloid=%d&client=XBMC", g_szHostname.c_str(), m_streamingPort, channelinfo.iUniqueId);
+		
+		if(m_backendVersion >= 20510)
+			snprintf(line, sizeof(line), "http://%s:%d/live?channeloid=%d&client=XBMC", g_szHostname.c_str(), m_streamingPort, channelinfo.iUniqueId);
+		else
+			snprintf(line, sizeof(line), "http://%s:%d/live?channel=%d&client=XBMC", g_szHostname.c_str(), m_streamingPort, channelinfo.iChannelNumber);
         m_PlaybackURL = line;
-
+		XBMC->Log(LOG_DEBUG, "m_PlaybackURL: %s", m_PlaybackURL);
 
         if (m_supportsLiveTimeshift && g_bUseTimeshift)
         {
