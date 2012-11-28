@@ -124,6 +124,9 @@ cPVRClientNextPVR::cPVRClientNextPVR()
   m_pLiveShiftSource       = NULL;
 
   m_incomingStreamBuffer.Create(188*2000);
+  
+  // set default streaming port to global port
+  m_streamingPort = g_iPort;
 }
 
 cPVRClientNextPVR::~cPVRClientNextPVR()
@@ -217,6 +220,16 @@ bool cPVRClientNextPVR::Connect()
                 {
                   m_supportsLiveTimeshift = true;
                 }
+
+				TiXmlElement* streamingPortNode = settingsDoc.RootElement()->FirstChildElement("StreamingPort");
+                if (streamingPortNode != NULL)
+                {
+				  m_streamingPort = atoi(streamingPortNode->FirstChild()->Value());
+                } 
+				else 
+				{
+				  m_streamingPort = g_iPort;
+				}
               }
             }
 
@@ -707,7 +720,7 @@ PVR_ERROR cPVRClientNextPVR::GetRecordings(ADDON_HANDLE handle)
         tag.iDuration = atoi(pRecordingNode->FirstChildElement("duration_seconds")->FirstChild()->Value());
 
         CStdString strStream;
-        strStream.Format("http://%s:%d/live?recording=%s", g_szHostname, g_iPort, tag.strRecordingId);
+        strStream.Format("http://%s:%d/live?recording=%s", g_szHostname, m_streamingPort, tag.strRecordingId);
         strncpy(tag.strStreamURL, strStream.c_str(), sizeof(tag.strStreamURL)); 
 
 
@@ -743,7 +756,7 @@ PVR_ERROR cPVRClientNextPVR::GetRecordings(ADDON_HANDLE handle)
         tag.iDuration = atoi(pRecordingNode->FirstChildElement("duration_seconds")->FirstChild()->Value());
 
         CStdString strStream;
-        strStream.Format("http://%s:%d/live?recording=%s", g_szHostname, g_iPort, tag.strRecordingId);
+        strStream.Format("http://%s:%d/live?recording=%s", g_szHostname, m_streamingPort, tag.strRecordingId);
         strncpy(tag.strStreamURL, strStream.c_str(), sizeof(tag.strStreamURL)); 
 
         if (tag.recordingTime <= time(NULL) && (tag.recordingTime + tag.iDuration) >= time(NULL))
@@ -949,7 +962,7 @@ bool cPVRClientNextPVR::OpenLiveStream(const PVR_CHANNEL &channelinfo)
 {
   m_PlaybackURL = "";
 
-  XBMC->Log(LOG_DEBUG, "OpenLiveStream(%d:%s) (oid=%d)", channelinfo.iChannelNumber, channelinfo.strChannelName, channelinfo.iUniqueId);
+  XBMC->Log(LOG_DEBUG, "OpenLiveStream(%d:%s) (oid=%d) (streamingPort=%d)", channelinfo.iChannelNumber, channelinfo.strChannelName, channelinfo.iUniqueId, m_streamingPort);
   if (strstr(channelinfo.strStreamURL, "live?channel") == NULL)
   {
     if (!m_streamingclient->create())
@@ -958,7 +971,7 @@ bool cPVRClientNextPVR::OpenLiveStream(const PVR_CHANNEL &channelinfo)
       return false;
     }
 
-    if (!m_streamingclient->connect(g_szHostname, g_iPort))
+    if (!m_streamingclient->connect(g_szHostname, m_streamingPort))
     {
       XBMC->Log(LOG_ERROR, "Could not connect to NextPVR backend for streaming");
       return false;
@@ -1020,7 +1033,7 @@ bool cPVRClientNextPVR::OpenLiveStream(const PVR_CHANNEL &channelinfo)
         // long blocking from now on
         m_streamingclient->set_non_blocking(1);
 
-        snprintf(line, sizeof(line), "http://%s:%d/live?channel=%d&client=XBMC", g_szHostname.c_str(), g_iPort, channelinfo.iChannelNumber);
+        snprintf(line, sizeof(line), "http://%s:%d/live?channel=%d&client=XBMC", g_szHostname.c_str(), m_streamingPort, channelinfo.iChannelNumber);
         m_PlaybackURL = line;
 
 

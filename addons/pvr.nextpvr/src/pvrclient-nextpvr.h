@@ -124,6 +124,7 @@ private:
   bool                    m_supportsLiveTimeshift;
   long long               m_currentLiveLength;
   long long               m_currentLivePosition;
+  int                     m_streamingPort;
 
   CStdString              m_PlaybackURL;
   LiveShiftSource        *m_pLiveShiftSource;
